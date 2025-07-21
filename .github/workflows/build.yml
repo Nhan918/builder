@@ -142,20 +142,6 @@ jobs:
           zip -r9 "AnyKernel3-${{ github.event.inputs.AK3_NAME }}.zip" ./*
           ls -lh "AnyKernel3-${{ github.event.inputs.AK3_NAME }}.zip"
           
-      - name: Upload to Telegram
-        if: github.event.inputs.UPLOAD_TO_TG == 'true'
-        env:
-          CHAT_ID: ${{ secrets.CHAT_ID }}
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-        run: |
-          if [ ! -z "${{ secrets.BOT_TOKEN }}" ]; then   
-          ZIP="./anykernel3/AnyKernel3-${{ github.event.inputs.AK3_NAME }}.zip"
-          cat buildDetails.txt
-          git clone --depth=1 -b telegram https://github.com/maazm7d/builder.git i && cp ./i/xedbot.sh . && rm -rf i
-          bash $(pwd)/xedbot.sh "$ZIP" "`cat buildDetails.txt`"
-          fi
-        working-directory: kernel_root
-
       - name: Generate changelog
         id: changelog
         run: |
