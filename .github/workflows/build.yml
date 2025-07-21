@@ -28,14 +28,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Kernel Source
-        uses: actions/checkout@v4
-        with:
-          repository: maazm7d/kernel_samsung_a12-test
-          path: kernel_root
-          ref: ${{ github.event.inputs.BRANCH }}
-          show-progress: false
-          fetch-depth: 0
+      - name: clone kernel source
+        run: |
+          git clone https://github.com/Nhan918/A135F-M-kernel.git -b main kernel_root
 
       - name: Prepare dependencies + fetch tags
         run: |
@@ -70,15 +65,15 @@ jobs:
           export PATH=$(pwd)/toolchains/clang/bin:$PATH
           export CROSS_COMPILE=$(pwd)/toolchains/google/bin/aarch64-linux-android-
           export CLANG_TRIPLE=aarch64-linux-gnu-
-          export KBUILD_BUILD_USER="maaz"
+          export KBUILD_BUILD_USER="Nhan"
           export KBUILD_BUILD_HOST="github"
           export BUILD_START=`date`
           export IS_CI=true
           
 
-          export DEFCONFIG="exynos850-a12snsxx_defconfig"
-          export DEVICE_ID="A12s"
-          export KERNEL_SOURCE="https://github.com/maazm7d/kernel_samsung_a12"
+          export DEFCONFIG="exynos850-a13xx_defconfig"
+          export DEVICE_ID="A13"
+          export KERNEL_SOURCE="https://github.com/Nhan918/A135F-M-kernel.git"
 
           if [[ "${{ github.event.inputs.SELINUX_PERMISSIVE }}" == 'true' ]]; then
           echo "Switching SELinux to Permissive mode..."
@@ -96,20 +91,11 @@ jobs:
           # Show final SELinux state
           echo "SELinux is set to: $SELINUX_STATE"
 
-          bash $(pwd)/build_kernel.sh kernel --jobs $(nproc --all) $DEFCONFIG
-
+          make --jobs $(nproc --all) -C $(pwd) LD=ld.lld CC=clang CROSS_COMPILE=$CROSS_COMPILE ARCH=arm64 $DEFCONFIG
+          make --jobs $(nproc --all) -C $(pwd) LD=ld.lld CC=clang CROSS_COMPILE=$CROSS_COMPILE ARCH=arm64
           
          
-          
-          KSU_REV_COUNT=$(cd KernelSU-Next && git rev-list --count HEAD)
-          	KSU_VERSION=$(expr 10200 + $KSU_REV_COUNT)
-          SUSFS_VERSION="1.5.7"
-          
-          echo "- KernelSU version: $KSU_VERSION"
-        
-          echo -e "Localversion: $(./scripts/setlocalversion)\n\nClang version: $(clang -v 2>&1 | grep ' version ' | sed 's/[[:space:]]*$//')\n\nBuild: $BUILD_START\n\nDefconfig: $DEFCONFIG\n\nSELinux: $SELINUX_STATE\n\nKernelSU-Next: $KSU_VERSION\n\nSUSFS: $SUSFS_VERSION\n\nSource: $KERNEL_SOURCE" > buildDetails.txt
 
- 
           echo "TITLE=Galaxy `echo $DEVICE_ID` Kernel" >> $GITHUB_ENV
 
           mv .config build_config.txt
@@ -204,7 +190,7 @@ jobs:
           name: "${{ steps.tag.outputs.tag_name }}"
           body: ${{ steps.changelog.outputs.changelog }}
           files: kernel_root/anykernel3/AnyKernel3-${{ github.event.inputs.AK3_NAME }}.zip
-          repository: maazm7d/kernel_samsung_a12
+          repository: Nhan918/A135F-M-kernel
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         
