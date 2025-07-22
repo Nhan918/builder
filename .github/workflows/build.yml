@@ -16,9 +16,6 @@ on:
       SELINUX_PERMISSIVE:
         description: Permissive SELinux
         type: boolean
-      UPLOAD_TO_TG:
-        description: Upload to Telegram
-        type: boolean
       UPLOAD_TO_GH:
         description: Upload to GitHub Release
         type: boolean
