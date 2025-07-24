@@ -1,0 +1,104 @@
+name: Kernel Builder
+on:
+  workflow_dispatch:
+    inputs:
+      KERNEL_URL:
+        description: 'Kernel Source URL'
+        required: true
+        default: 'https://github.com/Nhan918/A135F-M-kernel.git'
+      KERNEL_BRANCH:
+        description: 'Kernel Source Branch'
+        required: true
+        default: 'test'
+      ADDSU:
+        description: 'Add SuperUser'
+        required: false
+        default: 'No'
+        type: choice
+        options:
+          - 'No'
+          - 'KernelSU Next'
+      TOOLCHAIN_BRANCH:
+        description: 'Toolchain Branch'
+        required: true
+        default: 'android12L-release'
+      CLANG:
+        description: 'clang-'
+        required: true
+        default: 'r383902'
+      ARCH:
+        description: 'ARCH='
+        required: true
+        default: 'arm64'
+      DEFCONFIG:
+        description: '_defconfig file'
+        required: true
+        default: 'exynos850-a13xx_defconfig'
+jobs:
+  Buiding-Kernel:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Free Disk Space (Ubuntu)
+      uses: jlumbroso/free-disk-space@main
+      with:
+        # this might remove tools that are actually needed,
+        # if set to "true" but frees about 6 GB
+        tool-cache: true
+        # all of these default to true, but feel free to set to
+        # "false" if necessary for your workflow
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: true
+        docker-images: true
+        swap-storage: true
+
+    - name: Setup Environment
+      run: |
+        sudo apt update
+        sudo apt-get install git-core bc make flex bison
+
+    - name: Clone Kernel Source
+      run: |
+        git clone  --recursive ${{ inputs.KERNEL_URL }} -b ${{ inputs.KERNEL_BRANCH }} kernel
+
+    - name: Download Toolchain
+      run: |
+        cd kernel
+        mkdir -p toolchain/clang/host/linux-x86/clang-${{ inputs.CLANG }}
+        wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/${{ inputs.TOOLCHAIN_BRANCH }}/clang-${{ inputs.CLANG }}.tar.gz -O toolchain/clang/host/linux-x86/clang-${{ inputs.CLANG }}/clang.tar.gz
+        cd toolchain/clang/host/linux-x86/clang-${{ inputs.CLANG }}
+        tar -xvf clang.tar.gz
+        rm -v clang.tar.gz
+
+    - name: Download Toolchain
+      run: |
+        cd kernel
+        mkdir -p toolchain/gcc/linux-x86/aarch64/aarch64-linux-android-4.9
+        git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 -b ${{ inputs.TOOLCHAIN_BRANCH }} toolchain/gcc/linux-x86/aarch64/aarch64-linux-android-4.9
+
+    - name: Add SuperUser
+      run: |
+        cd kernel
+        ADDSU="${{ inputs.ADDSU }}"
+        echo ${{ inputs.ADDSU }}
+        if [[ $ADDSU == "KernelSU Next" ]]; then
+        	curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -
+        fi
+        ls -a
+
+    - name: Building Kernel
+      run: |
+        cd kernel
+        export PLATFORM_VERSION=13
+        export ANDROID_MAJOR_VERSION=13
+        export ARCH=${{ inputs.ARCH }}
+        make ARCH=${{ inputs.ARCH }} ${{ inputs.DEFCONFIG }}
+        make ARCH=${{ inputs.ARCH }}
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.KERNEL_BRANCH }}-${{ inputs.CLANG }}
+        path: |
+          kernel/arch/arm64/boot/Image
+          kernel/drivers/*/*.ko
