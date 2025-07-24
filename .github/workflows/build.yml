@@ -27,7 +27,7 @@ jobs:
     steps:
       - name: clone kernel source
         run: |
-          git clone https://github.com/Nhan918/A135F-M-kernel.git -b main kernel_root
+          git clone https://github.com/Nhan918/A135F-M-kernel.git -b test kernel_root
 
       - name: Prepare dependencies + fetch tags
         run: |
